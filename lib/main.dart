@@ -12,17 +12,18 @@ Future<void> main() async {
 }
 
 /// Root widget for the Reflect journaling app.
-class ReflectApp extends StatelessWidget {
+class ReflectApp extends ConsumerWidget {
   const ReflectApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
     return MaterialApp.router(
       title: 'Reflect',
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
-      routerConfig: appRouter,
+      routerConfig: router,
       debugShowCheckedModeBanner: false,
     );
   }
