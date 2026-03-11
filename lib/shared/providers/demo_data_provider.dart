@@ -7,14 +7,14 @@ import 'journal_provider.dart';
 import 'prompt_provider.dart';
 import 'summary_provider.dart';
 
-/// Seeds all demo data into providers on first read.
+/// Seeds all demo data into providers.
 ///
-/// Call `ref.read(demoDataProvider)` once at startup.
-final demoDataProvider = Provider<void>((ref) {
-  ref.read(journalProvider.notifier).seedEntries(_demoEntries);
-  ref.read(summaryProvider.notifier).seedSummaries(_demoSummaries);
-  ref.read(promptProvider.notifier).seedPrompts(_demoPrompts);
-});
+/// Call once from `main()` with the app's [ProviderContainer].
+void seedDemoData(ProviderContainer container) {
+  container.read(journalProvider.notifier).seedEntries(_demoEntries);
+  container.read(summaryProvider.notifier).seedSummaries(_demoSummaries);
+  container.read(promptProvider.notifier).seedPrompts(_demoPrompts);
+}
 
 // ---------------------------------------------------------------------------
 // JOURNAL ENTRIES — 15 entries across 3 weeks

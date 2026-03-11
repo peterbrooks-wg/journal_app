@@ -8,7 +8,16 @@ import 'shared/providers/demo_data_provider.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // await initSupabase(); // Disabled for demo — no credentials needed
-  runApp(const ProviderScope(child: ReflectApp()));
+
+  final container = ProviderContainer();
+  seedDemoData(container);
+
+  runApp(
+    UncontrolledProviderScope(
+      container: container,
+      child: const ReflectApp(),
+    ),
+  );
 }
 
 /// Root widget for the Reflect journaling app.
@@ -17,9 +26,6 @@ class ReflectApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Seed demo data on first build.
-    ref.read(demoDataProvider);
-
     final router = ref.watch(routerProvider);
     return MaterialApp.router(
       title: 'Reflect',
