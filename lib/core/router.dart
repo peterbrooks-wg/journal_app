@@ -8,14 +8,25 @@ import '../features/journal/home_screen.dart';
 import '../features/journal/journal_entry_screen.dart';
 import '../features/journal/journal_list_screen.dart';
 import '../features/settings/settings_screen.dart';
-import '../features/summaries/summaries_screen.dart';
+import '../features/summaries/summaries_list_screen.dart';
+import '../features/summaries/summary_detail_screen.dart';
 import '../shared/providers/auth_provider.dart';
+import '../shared/widgets/scaffold_with_nav_bar.dart';
+
+// Navigator keys for each tab branch.
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
+final _homeNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'home');
+final _journalNavigatorKey =
+    GlobalKey<NavigatorState>(debugLabel: 'journal');
+final _summariesNavigatorKey =
+    GlobalKey<NavigatorState>(debugLabel: 'summaries');
+final _settingsNavigatorKey =
+    GlobalKey<NavigatorState>(debugLabel: 'settings');
 
 /// Creates the app router with auth-aware redirects.
-///
-/// Pass a [Ref] so the router can read [authProvider].
 GoRouter createRouter(Ref ref) {
   return GoRouter(
+    navigatorKey: _rootNavigatorKey,
     initialLocation: '/',
     redirect: (BuildContext context, GoRouterState state) {
       final authStatus = ref.read(authProvider);
@@ -30,7 +41,7 @@ GoRouter createRouter(Ref ref) {
         return isOnOnboarding ? null : '/onboarding';
       }
 
-      // Authenticated — redirect away from auth/onboarding pages.
+      // Authenticated — redirect away from auth/onboarding.
       if (isOnAuthPage || isOnOnboarding) {
         return '/';
       }
@@ -38,56 +49,96 @@ GoRouter createRouter(Ref ref) {
       return null;
     },
     routes: <RouteBase>[
+      // Auth routes — outside the shell (no nav bar).
       GoRoute(
-        path: '/',
-        builder: (BuildContext context, GoRouterState state) {
-          return const HomeScreen();
-        },
+        path: '/auth',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const AuthScreen(),
       ),
       GoRoute(
         path: '/onboarding',
-        builder: (BuildContext context, GoRouterState state) {
-          return const OnboardingScreen();
-        },
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const OnboardingScreen(),
       ),
-      GoRoute(
-        path: '/auth',
-        builder: (BuildContext context, GoRouterState state) {
-          return const AuthScreen();
+
+      // Main app — shell with bottom navigation.
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return ScaffoldWithNavBar(navigationShell: navigationShell);
         },
-      ),
-      GoRoute(
-        path: '/journal',
-        builder: (BuildContext context, GoRouterState state) {
-          return const JournalListScreen();
-        },
-        routes: <RouteBase>[
-          GoRoute(
-            path: 'new',
-            builder: (BuildContext context, GoRouterState state) {
-              return const JournalEntryScreen();
-            },
+        branches: [
+          // Tab 0: Home
+          StatefulShellBranch(
+            navigatorKey: _homeNavigatorKey,
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (context, state) => const HomeScreen(),
+              ),
+            ],
           ),
-          GoRoute(
-            path: ':id',
-            builder: (BuildContext context, GoRouterState state) {
-              final entryId = state.pathParameters['id'];
-              return JournalEntryScreen(entryId: entryId);
-            },
+
+          // Tab 1: Journal
+          StatefulShellBranch(
+            navigatorKey: _journalNavigatorKey,
+            routes: [
+              GoRoute(
+                path: '/journal',
+                builder: (context, state) =>
+                    const JournalListScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'new',
+                    builder: (context, state) =>
+                        const JournalEntryScreen(),
+                  ),
+                  GoRoute(
+                    path: ':id',
+                    builder: (context, state) {
+                      final entryId = state.pathParameters['id'];
+                      return JournalEntryScreen(entryId: entryId);
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          // Tab 2: Insights (Summaries)
+          StatefulShellBranch(
+            navigatorKey: _summariesNavigatorKey,
+            routes: [
+              GoRoute(
+                path: '/summaries',
+                builder: (context, state) =>
+                    const SummariesListScreen(),
+                routes: [
+                  GoRoute(
+                    path: ':id',
+                    builder: (context, state) {
+                      final summaryId = state.pathParameters['id']!;
+                      return SummaryDetailScreen(
+                        summaryId: summaryId,
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          // Tab 3: Settings
+          StatefulShellBranch(
+            navigatorKey: _settingsNavigatorKey,
+            routes: [
+              GoRoute(
+                path: '/settings',
+                builder: (context, state) =>
+                    const SettingsScreen(),
+              ),
+            ],
           ),
         ],
-      ),
-      GoRoute(
-        path: '/summaries',
-        builder: (BuildContext context, GoRouterState state) {
-          return const SummariesScreen();
-        },
-      ),
-      GoRoute(
-        path: '/settings',
-        builder: (BuildContext context, GoRouterState state) {
-          return const SettingsScreen();
-        },
       ),
     ],
   );
