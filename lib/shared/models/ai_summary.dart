@@ -9,6 +9,7 @@ class AiSummary {
   final String userId;
   final DateTime weekStart;
   final String summaryText;
+  final String growthObservation;
   final List<String> themes;
   final int entryCount;
   final int wordCountTotal;
@@ -19,11 +20,15 @@ class AiSummary {
     required this.userId,
     required this.weekStart,
     required this.summaryText,
+    required this.growthObservation,
     required this.themes,
     required this.entryCount,
     required this.wordCountTotal,
     required this.createdAt,
   });
+
+  /// End of the summary week (6 days after start).
+  DateTime get weekEnd => weekStart.add(const Duration(days: 6));
 
   factory AiSummary.fromJson(Map<String, dynamic> json) =>
       _$AiSummaryFromJson(json);
