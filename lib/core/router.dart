@@ -25,9 +25,13 @@ final _settingsNavigatorKey =
 
 /// Creates the app router with auth-aware redirects.
 GoRouter createRouter(Ref ref) {
+  // Listen to auth changes and refresh router redirects.
+  final authNotifier = _AuthChangeNotifier(ref);
+
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/',
+    refreshListenable: authNotifier,
     redirect: (BuildContext context, GoRouterState state) {
       final authStatus = ref.read(authProvider);
       final isOnAuthPage = state.matchedLocation == '/auth';
@@ -148,3 +152,10 @@ GoRouter createRouter(Ref ref) {
 final routerProvider = Provider<GoRouter>((ref) {
   return createRouter(ref);
 });
+
+/// Bridges Riverpod auth state changes to GoRouter's refreshListenable.
+class _AuthChangeNotifier extends ChangeNotifier {
+  _AuthChangeNotifier(Ref ref) {
+    ref.listen(authProvider, (_, _) => notifyListeners());
+  }
+}
