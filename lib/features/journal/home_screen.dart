@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme.dart';
 import '../../shared/providers/journal_provider.dart';
+import '../../shared/providers/prompt_provider.dart';
 import 'widgets/entry_card.dart';
 import 'widgets/prompt_card.dart';
 
@@ -11,7 +12,7 @@ import 'widgets/prompt_card.dart';
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
-  static const _genericPrompts = [
+  static const _fallbackPrompts = [
     'What are you grateful for today?',
     'What challenge taught you something this week?',
     'Describe a moment that made you smile recently.',
@@ -27,7 +28,13 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final recentEntries = ref.watch(recentEntriesProvider);
+    final aiPrompts = ref.watch(latestPromptsProvider);
     final textTheme = Theme.of(context).textTheme;
+
+    // Use AI prompts if available, otherwise fall back to generic.
+    final promptTexts = aiPrompts.isNotEmpty
+        ? aiPrompts.map((p) => p.promptText).toList()
+        : _fallbackPrompts;
 
     return Scaffold(
       body: SafeArea(
@@ -57,7 +64,7 @@ class HomeScreen extends ConsumerWidget {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
-                  children: _genericPrompts
+                  children: promptTexts
                       .map(
                         (prompt) => PromptCard(
                           promptText: prompt,
@@ -126,7 +133,8 @@ class HomeScreen extends ConsumerWidget {
                     final entry = recentEntries[index];
                     return EntryCard(
                       entry: entry,
-                      onTap: () => context.go('/journal/${entry.id}'),
+                      onTap: () =>
+                          context.go('/journal/${entry.id}'),
                     );
                   },
                   childCount: recentEntries.length,
