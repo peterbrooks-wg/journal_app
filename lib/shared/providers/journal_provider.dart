@@ -59,6 +59,13 @@ class JournalNotifier extends Notifier<List<JournalEntry>> {
     return null;
   }
 
+  /// Bulk-replace entries with pre-built data.
+  ///
+  /// Used for demo seeding. Entries must have all fields set.
+  void seedEntries(List<JournalEntry> entries) {
+    state = entries;
+  }
+
   static int _countWords(String text) {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return 0;
@@ -71,11 +78,10 @@ final journalProvider = NotifierProvider<JournalNotifier, List<JournalEntry>>(
   JournalNotifier.new,
 );
 
-/// Entries from the last 7 days, for the home screen.
+/// Most recent 5 entries for the home screen.
 final recentEntriesProvider = Provider<List<JournalEntry>>((ref) {
   final entries = ref.watch(journalProvider);
-  final cutoff = DateTime.now().subtract(const Duration(days: 7));
-  return entries.where((e) => e.createdAt.isAfter(cutoff)).toList();
+  return entries.take(5).toList();
 });
 
 /// Filtered entries for search.
