@@ -7,6 +7,7 @@ part 'ai_prompt.g.dart';
 class AiPrompt {
   final String id;
   final String userId;
+  final String summaryId;
   final String promptText;
   final List<String> sourceThemes;
   final bool used;
@@ -16,6 +17,7 @@ class AiPrompt {
   const AiPrompt({
     required this.id,
     required this.userId,
+    required this.summaryId,
     required this.promptText,
     required this.sourceThemes,
     required this.used,
