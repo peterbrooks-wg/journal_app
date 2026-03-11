@@ -9,6 +9,7 @@ part of 'ai_prompt.dart';
 AiPrompt _$AiPromptFromJson(Map<String, dynamic> json) => AiPrompt(
   id: json['id'] as String,
   userId: json['user_id'] as String,
+  summaryId: json['summary_id'] as String,
   promptText: json['prompt_text'] as String,
   sourceThemes: (json['source_themes'] as List<dynamic>)
       .map((e) => e as String)
@@ -23,6 +24,7 @@ AiPrompt _$AiPromptFromJson(Map<String, dynamic> json) => AiPrompt(
 Map<String, dynamic> _$AiPromptToJson(AiPrompt instance) => <String, dynamic>{
   'id': instance.id,
   'user_id': instance.userId,
+  'summary_id': instance.summaryId,
   'prompt_text': instance.promptText,
   'source_themes': instance.sourceThemes,
   'used': instance.used,
