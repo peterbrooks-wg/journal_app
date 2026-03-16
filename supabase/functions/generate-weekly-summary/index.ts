@@ -21,8 +21,9 @@ function currentMonth(): string {
 function currentWeekStart(): string {
   const now = new Date();
   const day = now.getDay();
-  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-  const monday = new Date(now.setDate(diff));
+  const diff = day === 0 ? -6 : 1 - day;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + diff);
   return monday.toISOString().split('T')[0];
 }
 
@@ -43,6 +44,19 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Validate caller authorization (service role key or cron secret)
+    const authHeader = req.headers.get('Authorization');
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (authHeader !== `Bearer ${serviceKey}`) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        },
+      );
+    }
+
     const { user_id } = await req.json();
     if (!user_id) {
       return new Response(
@@ -60,7 +74,7 @@ Deno.serve(async (req) => {
     const month = currentMonth();
     const { data: usage } = await supabase
       .from('usage_tracking')
-      .select('summary_count')
+      .select('summary_count, ai_prompt_requests')
       .eq('user_id', user_id)
       .eq('month', month)
       .single();
@@ -143,10 +157,22 @@ Deno.serve(async (req) => {
     }));
 
     // 5. Call Gemini
-    const aiResult = await generateWeeklySummary(
-      runningSummary?.summary_text ?? '',
-      compressedEntries,
-    );
+    let aiResult;
+    try {
+      aiResult = await generateWeeklySummary(
+        runningSummary?.summary_text ?? '',
+        compressedEntries,
+      );
+    } catch (geminiErr) {
+      console.error('Gemini API error:', geminiErr);
+      return new Response(
+        JSON.stringify({ error: (geminiErr as Error).message }),
+        {
+          status: 502,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        },
+      );
+    }
 
     // 6. Calculate totals
     const entryCount = entries.length;
@@ -219,7 +245,7 @@ Deno.serve(async (req) => {
           user_id,
           month,
           summary_count: currentCount + 1,
-          ai_prompt_requests: 0,
+          ai_prompt_requests: usage?.ai_prompt_requests ?? 0,
         },
         { onConflict: 'user_id,month' },
       );

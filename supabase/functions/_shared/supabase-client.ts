@@ -24,7 +24,7 @@ export function createUserClient(req: Request) {
     {
       global: {
         headers: {
-          Authorization: req.headers.get('Authorization')!,
+          Authorization: req.headers.get('Authorization') ?? '',
         },
       },
     },
