@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:go_router/go_router.dart';
+
 import '../../core/theme.dart';
 import '../../shared/providers/auth_provider.dart';
+import '../../shared/providers/subscription_provider.dart';
 
 /// Settings screen with profile, subscription badge, and sign out.
 class SettingsScreen extends ConsumerWidget {
@@ -57,38 +60,7 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: 8),
 
           // Subscription badge
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.accent,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    'Pro',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  'Weekly AI summaries · Personalized prompts',
-                  style: textTheme.bodySmall?.copyWith(
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          _SubscriptionBadge(textTheme: textTheme),
 
           const SizedBox(height: 24),
           const Divider(),
@@ -172,6 +144,63 @@ class _SectionHeader extends StatelessWidget {
           color: AppTheme.textSecondary,
           fontWeight: FontWeight.w600,
           letterSpacing: 1,
+        ),
+      ),
+    );
+  }
+}
+
+class _SubscriptionBadge extends ConsumerWidget {
+  final TextTheme textTheme;
+
+  const _SubscriptionBadge({required this.textTheme});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isPro = ref.watch(isProProvider);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: GestureDetector(
+        onTap: isPro ? null : () => context.push('/paywall'),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 4,
+              ),
+              decoration: BoxDecoration(
+                color: isPro ? AppTheme.accent : AppTheme.textSecondary,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                isPro ? 'Pro' : 'Free',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                isPro
+                    ? 'Weekly AI summaries \u00b7 Personalized prompts'
+                    : 'Upgrade for AI summaries & prompts',
+                style: textTheme.bodySmall?.copyWith(
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+            ),
+            if (!isPro)
+              const Icon(
+                Icons.chevron_right,
+                color: AppTheme.textSecondary,
+                size: 18,
+              ),
+          ],
         ),
       ),
     );
