@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme.dart';
+import '../../shared/providers/subscription_provider.dart';
 import '../../shared/providers/summary_provider.dart';
 import 'widgets/summary_card.dart';
 
@@ -12,12 +13,15 @@ class SummariesListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isPro = ref.watch(isProProvider);
     final summaries = ref.watch(summaryProvider);
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Insights')),
-      body: summaries.isEmpty
+      body: !isPro
+          ? _FreeUserPrompt(textTheme: textTheme)
+          : summaries.isEmpty
           ? Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -104,6 +108,68 @@ class SummariesListScreen extends ConsumerWidget {
                 ),
               ],
             ),
+    );
+  }
+}
+
+class _FreeUserPrompt extends StatelessWidget {
+  final TextTheme textTheme;
+
+  const _FreeUserPrompt({required this.textTheme});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.auto_awesome,
+              size: 48,
+              color: AppTheme.accent,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Unlock AI Insights',
+              style: textTheme.titleLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Upgrade to Pro for weekly AI summaries,\n'
+              'personalized prompts, and growth tracking.',
+              style: textTheme.bodyMedium?.copyWith(
+                color: AppTheme.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => context.push('/paywall'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.accent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'See Pro Plans',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
