@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme.dart';
 import '../../shared/providers/auth_provider.dart';
+import '../../shared/providers/journal_provider.dart';
+import '../../shared/providers/prompt_provider.dart';
+import '../../shared/providers/settings_provider.dart';
 import '../../shared/providers/subscription_provider.dart';
+import '../../shared/providers/summary_provider.dart';
 
-/// Settings screen with profile, subscription badge, and sign out.
+/// Settings screen with profile, subscription, preferences, and privacy.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
+    final settings = ref.watch(settingsProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -24,7 +28,6 @@ class SettingsScreen extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
             child: Row(
               children: [
-                // Avatar
                 Container(
                   width: 48,
                   height: 48,
@@ -67,32 +70,54 @@ class SettingsScreen extends ConsumerWidget {
 
           // Preferences
           _SectionHeader(text: 'PREFERENCES', textTheme: textTheme),
-          const SwitchListTile(
-            title: Text('Notifications'),
-            value: true,
-            onChanged: null,
+          SwitchListTile(
+            title: const Text('Notifications'),
+            value: settings.notificationsEnabled,
+            onChanged: (value) {
+              ref
+                  .read(settingsProvider.notifier)
+                  .setNotificationsEnabled(value);
+            },
             activeThumbColor: AppTheme.accent,
           ),
           ListTile(
             title: const Text('Daily reminder'),
             trailing: Text(
-              '8:00 AM',
+              settings.reminderTime.format(context),
               style: textTheme.bodyMedium?.copyWith(
                 color: AppTheme.textSecondary,
               ),
             ),
+            onTap: () => _pickReminderTime(context, ref, settings),
+          ),
+
+          const Divider(),
+
+          // Security
+          _SectionHeader(text: 'SECURITY', textTheme: textTheme),
+          SwitchListTile(
+            title: const Text('Biometric lock'),
+            subtitle: const Text('Require Face ID or fingerprint'),
+            value: settings.biometricLockEnabled,
+            onChanged: (value) {
+              ref
+                  .read(settingsProvider.notifier)
+                  .setBiometricLockEnabled(value);
+            },
+            activeThumbColor: AppTheme.accent,
           ),
 
           const Divider(),
 
           // Privacy
           _SectionHeader(text: 'PRIVACY', textTheme: textTheme),
-          const ListTile(
-            title: Text('Export my data'),
-            trailing: Icon(
+          ListTile(
+            title: const Text('Export my data'),
+            trailing: const Icon(
               Icons.chevron_right,
               color: AppTheme.textSecondary,
             ),
+            onTap: () => _showExportDialog(context),
           ),
           ListTile(
             title: Text(
@@ -105,6 +130,7 @@ class SettingsScreen extends ConsumerWidget {
               Icons.chevron_right,
               color: AppTheme.textSecondary,
             ),
+            onTap: () => _showDeleteDialog(context, ref),
           ),
 
           const Divider(),
@@ -124,6 +150,152 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: 40),
         ],
       ),
+    );
+  }
+
+  Future<void> _pickReminderTime(
+    BuildContext context,
+    WidgetRef ref,
+    AppSettings settings,
+  ) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: settings.reminderTime,
+    );
+    if (picked != null) {
+      ref.read(settingsProvider.notifier).setReminderTime(picked);
+    }
+  }
+
+  void _showExportDialog(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Export Journal'),
+        content: const Text(
+          'Your journal entries will be exported as an '
+          'encrypted JSON file.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Journal exported successfully'),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.accent,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Export'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteDialog(BuildContext context, WidgetRef ref) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => _DeleteConfirmationDialog(ref: ref),
+    );
+  }
+}
+
+class _DeleteConfirmationDialog extends StatefulWidget {
+  final WidgetRef ref;
+
+  const _DeleteConfirmationDialog({required this.ref});
+
+  @override
+  State<_DeleteConfirmationDialog> createState() =>
+      _DeleteConfirmationDialogState();
+}
+
+class _DeleteConfirmationDialogState
+    extends State<_DeleteConfirmationDialog> {
+  final _controller = TextEditingController();
+  bool _canDelete = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(() {
+      setState(() => _canDelete = _controller.text == 'DELETE');
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Delete All Data'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'This will permanently delete all your journal entries, '
+            'summaries, and prompts. This action cannot be undone.',
+          ),
+          const SizedBox(height: 16),
+          const Text('Type DELETE to confirm:'),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _controller,
+            textCapitalization: TextCapitalization.characters,
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              hintText: 'DELETE',
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _canDelete
+              ? () {
+                  // Clear all mock data
+                  widget.ref
+                      .read(journalProvider.notifier)
+                      .seedEntries([]);
+                  widget.ref
+                      .read(summaryProvider.notifier)
+                      .seedSummaries([]);
+                  widget.ref
+                      .read(promptProvider.notifier)
+                      .seedPrompts([]);
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('All data deleted'),
+                    ),
+                  );
+                }
+              : null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            foregroundColor: Colors.white,
+          ),
+          child: const Text('Delete Everything'),
+        ),
+      ],
     );
   }
 }
