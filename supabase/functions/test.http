@@ -1,0 +1,41 @@
+### Generate Weekly Summary (service role — for testing)
+# Replace YOUR_SUPABASE_URL, YOUR_SERVICE_ROLE_KEY, and USER_ID
+POST {{SUPABASE_URL}}/functions/v1/generate-weekly-summary
+Authorization: Bearer {{SERVICE_ROLE_KEY}}
+Content-Type: application/json
+
+{
+  "user_id": "{{USER_ID}}"
+}
+
+### Check Usage Limit (user JWT — for testing)
+# Replace YOUR_SUPABASE_URL and USER_JWT
+POST {{SUPABASE_URL}}/functions/v1/check-usage-limit
+Authorization: Bearer {{USER_JWT}}
+Content-Type: application/json
+
+{}
+
+### Expected Responses:
+
+# generate-weekly-summary (success):
+# {
+#   "success": true,
+#   "summary": "...",
+#   "themes": ["..."],
+#   "growth_observation": "...",
+#   "prompts_created": 3,
+#   "entries_processed": 5
+# }
+
+# generate-weekly-summary (no new entries):
+# { "skipped": true, "reason": "no_new_entries" }
+
+# generate-weekly-summary (rate limited):
+# HTTP 429 { "allowed": false, "reason": "usage_limit_exceeded" }
+
+# check-usage-limit (free tier):
+# { "allowed": true, "remaining": 3, "limit": 4, "tier": "free" }
+
+# check-usage-limit (pro tier):
+# { "allowed": true, "remaining": -1, "limit": -1, "tier": "pro" }
