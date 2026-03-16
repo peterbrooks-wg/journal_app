@@ -7,6 +7,7 @@ import '../features/auth/onboarding_screen.dart';
 import '../features/journal/home_screen.dart';
 import '../features/journal/journal_entry_screen.dart';
 import '../features/journal/journal_list_screen.dart';
+import '../features/settings/paywall_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../features/summaries/summaries_list_screen.dart';
 import '../features/summaries/summary_detail_screen.dart';
@@ -63,6 +64,11 @@ GoRouter createRouter(Ref ref) {
         path: '/onboarding',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const OnboardingScreen(),
+      ),
+      GoRoute(
+        path: '/paywall',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const PaywallScreen(),
       ),
 
       // Main app — shell with bottom navigation.
